@@ -1,0 +1,51 @@
+import os
+from typing import Optional
+
+try:
+    from openai import OpenAI
+except Exception:  # pragma: no cover
+    OpenAI = None
+
+
+class LLMClient:
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        self.client = OpenAI(api_key=self.api_key) if self.api_key and OpenAI else None
+
+    def generate_response(self, prompt: str, mode: str = "general") -> str:
+        if self.client is not None:
+            try:
+                completion = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are Jarvis, a helpful personal AI laptop assistant. Answer clearly, concisely, and practically."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.7,
+                )
+                return completion.choices[0].message.content.strip() or self._offline_response(prompt, mode)
+            except Exception:
+                return self._offline_response(prompt, mode)
+        return self._offline_response(prompt, mode)
+
+    def _offline_response(self, prompt: str, mode: str = "general") -> str:
+        prompt_lower = prompt.lower()
+
+        if any(word in prompt_lower for word in ["write", "code", "script", "function", "python", "javascript", "html", "css", "debug", "fix", "bug"]):
+            return (
+                "I can help with that. Here is a practical approach: "
+                "define the goal clearly, break it into small steps, and build the smallest working version first. "
+                "If you want, send me the exact feature or bug and I can generate code, explain it, or suggest a fix."
+            )
+
+        if any(word in prompt_lower for word in ["open", "launch", "start", "run", "browser", "app"]):
+            return "I can open apps and websites for you. Tell me the app name or URL and I will handle it."
+
+        if any(word in prompt_lower for word in ["remind", "reminder", "schedule", "alarm"]):
+            return "I can set reminders for you. Say something like: 'Remind me in 20 minutes to drink water' or 'Set a reminder for 5 PM for my meeting'."
+
+        return (
+            "I am your local Jarvis-style assistant. I can answer questions, help with coding, open apps, set reminders, "
+            "and turn voice or text commands into actions. Tell me what you want me to do."
+        )

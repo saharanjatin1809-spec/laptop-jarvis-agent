@@ -1,0 +1,19 @@
+# Laptop JARVIS Agent
+
+A personal AI desktop assistant inspired by the idea of a JARVIS-style system.
+
+## Features
+
+- voice capture and spoken responses
+- text-based command interaction
+- AI question answering
+- coding and debugging help
+- reminder creation
+- app and website openers
+- automation hooks for desktop tasks
+
+## Requirements
+
+- Python 3.10+
+- Microphone (for voice mode)
+- Internet (optional, required for OpenAI API)
