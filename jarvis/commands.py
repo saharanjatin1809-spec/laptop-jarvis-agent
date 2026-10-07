@@ -17,11 +17,20 @@ class CommandHandler:
             "browser": "google-chrome",
             "firefox": "firefox",
             "terminal": "gnome-terminal",
+            "cmd": "cmd",
             "notepad": "notepad",
             "calculator": "calc",
             "spotify": "spotify",
+            "discord": "discord",
+            "slack": "slack",
             "file explorer": "explorer",
             "explorer": "explorer",
+            "sublime": "sublime_text",
+            "sublime text": "sublime_text",
+            "cursor": "cursor",
+            "pycharm": "pycharm",
+            "idea": "idea",
+            "vscode code": "code",
         }
 
     def handle(self, text: str):
@@ -29,6 +38,7 @@ class CommandHandler:
             return None
 
         lower = text.lower().strip()
+        lower = lower.replace("lucifer", "", 1).strip()
 
         if lower in {"exit", "quit", "bye", "goodbye", "shutdown", "stop"}:
             return "__EXIT__"
@@ -54,16 +64,27 @@ class CommandHandler:
         if "folder" in lower or "directory" in lower:
             return {"type": "folder", "text": text}
 
+        if lower.startswith("create file ") or lower.startswith("make file "):
+            return {"type": "create_file", "text": text}
+
+        if lower.startswith("list files") or lower.startswith("show files") or lower.startswith("ls "):
+            return {"type": "list_files", "text": text}
+
+        if lower.startswith("focus mode"):
+            return {"type": "focus_mode", "text": text}
+
         return None
 
     def open_app_or_url(self, text: str):
-        lower = text.lower().strip()
+        command = text.strip()
+        lower = command.lower()
+        lower = lower.replace("lucifer", "", 1).strip()
 
-        if re.search(r"https?://|www\.", text):
-            webbrowser.open(text)
+        if re.search(r"https?://|www\.", command):
+            webbrowser.open(command)
             return "Opened the link you requested."
 
-        app_name = text.split(maxsplit=1)[1].strip().strip("\"'") if " " in text else ""
+        app_name = command.split(maxsplit=1)[1].strip().strip("\"'") if " " in command else ""
         if not app_name:
             return "Which app or website should I open?"
 
@@ -71,32 +92,55 @@ class CommandHandler:
 
         try:
             if sys.platform.startswith("win"):
-                if app in {"explorer", "notepad", "calc"}:
+                if app in {"explorer", "notepad", "calc", "cmd"}:
                     subprocess.Popen(app, shell=True)
                 else:
                     subprocess.Popen(app)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", app])
             else:
                 subprocess.Popen(app)
             return f"Opened {app_name}."
         except Exception:
             try:
                 webbrowser.open(f"https://www.google.com/search?q={app_name.replace(' ', '+')}")
-                return f"I opened a search for {app_name}."
+                return f"I opened a browser search for {app_name}."
             except Exception:
                 return f"I could not open {app_name}."
 
     def open_path(self, path: str):
         try:
-            p = Path(path)
-            if p.exists():
-                if sys.platform.startswith("win"):
-                    os.startfile(str(p))
-                else:
-                    subprocess.Popen(["xdg-open", str(p)])
-                return f"Opened {path}."
-            return f"The path '{path}' does not exist."
+            p = Path(path).expanduser()
+            if not p.exists():
+                return f"The path '{path}' does not exist."
+            if sys.platform.startswith("win"):
+                os.startfile(str(p))
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", str(p)])
+            else:
+                subprocess.Popen(["xdg-open", str(p)])
+            return f"Opened {path}."
         except Exception:
             return f"I could not open {path}."
+
+    def list_files(self, target: str = "."):
+        target_path = Path(target).expanduser()
+        if not target_path.exists():
+            return f"The path '{target}' does not exist."
+
+        items = sorted([p.name for p in target_path.iterdir()])
+        if not items:
+            return f"The directory '{target}' is empty."
+        return "\n".join(items[:30])
+
+    def create_file(self, path: str, content: str = ""):
+        p = Path(path).expanduser()
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(content, encoding="utf-8")
+            return f"Created file at {path}."
+        except Exception as exc:
+            return f"I could not create the file: {exc}"
 
     def play_media(self, text: str):
         query = text.replace("play", "", 1).strip()

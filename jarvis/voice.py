@@ -52,6 +52,15 @@ class VoiceEngine:
         except KeyboardInterrupt:
             return "exit"
 
+    def wait_for_wake_word(self, wake_word: str = "lucifer") -> str:
+        while True:
+            raw = self.listen_once()
+            if not raw:
+                continue
+            lower = raw.lower().strip()
+            if wake_word.lower() in lower:
+                return raw
+
 
 class VoiceThread:
     def __init__(self, callback):
